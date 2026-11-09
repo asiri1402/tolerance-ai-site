@@ -75,6 +75,17 @@ async function tryEditor(editor: Editor, text: string, feedback?: string): Promi
   try {
     return { ok: true, out: await editor({ text, feedback }) };
   } catch (error) {
+    // تشخيص بلا محتوى: اسم الخطأ ورمز الحالة، ورسالة قصيرة فقط لأخطاء الاتصال بالمزوّد (لا تحوي نص المستخدم).
+    const e = error as { name?: string; statusCode?: number; message?: string };
+    console.log(
+      JSON.stringify({
+        app: 'tolerance',
+        event: 'editor_error',
+        name: e?.name ?? 'unknown',
+        statusCode: e?.statusCode ?? null,
+        message: e?.statusCode ? String(e.message ?? '').slice(0, 200) : undefined
+      })
+    );
     return { ok: false, error };
   }
 }
