@@ -177,7 +177,7 @@ export default function Home() {
               <div className="result-head">
                 <div>
                   <span className="small-label">النتيجة</span>
-                  <h2>صياغة أكثر وضوحًا واحترامًا</h2>
+                  <h2>{result.flags.length ? 'صياغة أكثر وضوحًا واحترامًا' : 'رسالتك واضحة ومحترمة كما هي'}</h2>
                 </div>
                 <span className={`mode-badge ${result.mode}`}>{result.mode === 'ai' ? 'ذكاء اصطناعي' : 'وضع تجريبي'}</span>
               </div>
@@ -192,7 +192,7 @@ export default function Home() {
               </div>
 
               <div className="why-box">
-                <strong>ماذا حسّنا؟</strong>
+                <strong>{result.flags.length ? 'ماذا حسّنا؟' : 'التقييم'}</strong>
                 <p>{result.explanation}</p>
               </div>
 

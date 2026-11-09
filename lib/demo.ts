@@ -58,10 +58,16 @@ export function demoImprove(input: string): ImproveResult {
 
   improved = normalizePunctuation(improved);
   if (!flags.length) {
-    flags.push('يمكن تحسين الوضوح واللطف');
-    improved = original
-      ? `أود التعبير عن وجهة نظري بوضوح واحترام: ${original}`
-      : 'اكتب رسالتك أولًا وسأساعدك في تحسين نبرتها.';
+    return {
+      original,
+      improved: original,
+      toneScoreBefore: 96,
+      toneScoreAfter: 96,
+      flags: [],
+      explanation: 'النص واضح ومحترم كما هو؛ لا يحتاج إلى تعديل.',
+      alternatives: { formal: original, friendly: original, concise: original },
+      mode: 'demo'
+    };
   }
 
   const before = Math.max(20, 78 - flags.length * 16);
