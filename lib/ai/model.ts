@@ -31,9 +31,9 @@ export function aiConfigured(): boolean {
   return Boolean(process.env.AI_MODEL);
 }
 
-/** خيارات AI Gateway: عدم الاحتفاظ بالبيانات، النماذج البديلة، وسوم الاستخدام. */
+/** خيارات AI Gateway: عدم الاحتفاظ بالبيانات والنماذج البديلة. بلا وسوم (التقارير المخصصة خدمة مدفوعة). */
 function providerOptions() {
-  const gateway: Record<string, unknown> = { tags: ['tolerance-site'] };
+  const gateway: Record<string, unknown> = {};
   if (process.env.AI_ZDR === '1') gateway.zeroDataRetention = true;
   const fallbacks = (process.env.AI_FALLBACK_MODELS ?? '')
     .split(',')
