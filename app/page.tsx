@@ -2,57 +2,99 @@
 
 import { ChangeEvent, useMemo, useState } from 'react';
 
+type AppliedEdit = { quote: string; replacement: string; category: string; reason: string; label: string };
+
 type ImproveResult = {
+  status: 'ok' | 'unchanged' | 'no_rewrite' | 'degraded' | 'error';
   original: string;
   improved: string;
-  toneScoreBefore: number;
-  toneScoreAfter: number;
-  flags: string[];
-  explanation: string;
-  alternatives: { formal: string; friendly: string; concise: string };
-  mode: 'ai' | 'demo';
+  severity: 'clean' | 'soften' | 'sharp' | null;
+  edits: AppliedEdit[];
+  notice: string;
+  verified: boolean | null;
+  mode: 'ai' | 'mock' | 'none';
 };
+
+type Style = 'formal' | 'friendly' | 'concise';
+type Version = 'improved' | Style;
 
 const examples = [
   'واضح أنك ما فهمت الموضوع أصلًا.',
   'أنت دائمًا تتأخر وما يعتمد عليك.',
-  'أنت غلطان 100% ولا عندك أي دليل.'
+  'أنا ضد هذا القرار لأنه يرفع التكلفة، ونحتاج بديلًا.'
 ];
+
+const MAX_DIM = 1568;
+const MAX_IMAGE_BYTES = 3_000_000;
+
+/** يصغّر الصورة ويعيد ترميزها JPEG؛ إعادة الترميز تزيل بيانات EXIF (الموقع وغيره). */
+async function prepareImage(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('تعذرت معالجة الصورة.');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  for (const q of [0.85, 0.7, 0.55]) {
+    const url = canvas.toDataURL('image/jpeg', q);
+    if ((url.length * 3) / 4 <= MAX_IMAGE_BYTES) return url;
+  }
+  throw new Error('الصورة كبيرة جدًا حتى بعد التصغير.');
+}
+
+async function post(payload: Record<string, unknown>) {
+  const res = await fetch('/api/improve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.notice || data.error || 'تعذر تنفيذ الطلب الآن.');
+  return data;
+}
 
 export default function Home() {
   const [tab, setTab] = useState<'text' | 'image'>('text');
   const [text, setText] = useState('');
-  const [imageDataUrl, setImageDataUrl] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
   const [imageName, setImageName] = useState('');
+  const [extracting, setExtracting] = useState(false);
+  const [fromImage, setFromImage] = useState(false);
   const [result, setResult] = useState<ImproveResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedVersion, setSelectedVersion] = useState<'improved' | 'formal' | 'friendly' | 'concise'>('improved');
+  const [selectedVersion, setSelectedVersion] = useState<Version>('improved');
+  const [variants, setVariants] = useState<Partial<Record<Style, string>>>({});
+  const [variantLoading, setVariantLoading] = useState(false);
+  const [variantError, setVariantError] = useState('');
   const [copied, setCopied] = useState(false);
 
   const selectedText = useMemo(() => {
     if (!result) return '';
-    return selectedVersion === 'improved' ? result.improved : result.alternatives[selectedVersion];
-  }, [result, selectedVersion]);
+    if (selectedVersion === 'improved') return result.improved;
+    return variants[selectedVersion] ?? '';
+  }, [result, selectedVersion, variants]);
 
   async function improve() {
     setError('');
     setCopied(false);
-    if (!text.trim() && !imageDataUrl) {
-      setError('اكتب رسالة أو ارفع صورة أولًا.');
+    if (!text.trim()) {
+      setError(tab === 'image' ? 'ارفع صورة أولًا ليُقرأ نصها.' : 'اكتب رسالة أولًا.');
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/improve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, imageDataUrl })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'تعذر التحسين الآن.');
+      const data = (await post({ action: 'improve', text })) as ImproveResult;
       setResult(data);
       setSelectedVersion('improved');
+      setVariants({});
+      setVariantError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'حدث خطأ غير متوقع.');
     } finally {
@@ -60,24 +102,57 @@ export default function Home() {
     }
   }
 
-  function onImage(e: ChangeEvent<HTMLInputElement>) {
+  async function onImage(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setError('يرجى اختيار صورة فقط.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('حجم الصورة يجب ألا يتجاوز 5 ميجابايت.');
+    if (file.size > 15 * 1024 * 1024) {
+      setError('حجم الصورة كبير جدًا.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageDataUrl(String(reader.result || ''));
+    setError('');
+    setExtracting(true);
+    try {
+      const dataUrl = await prepareImage(file);
+      setImagePreview(dataUrl);
       setImageName(file.name);
-      setError('');
-    };
-    reader.readAsDataURL(file);
+      const data = await post({ action: 'extract', imageDataUrl: dataUrl });
+      if (data.status === 'no_text') {
+        setError(data.notice);
+        return;
+      }
+      setText(String(data.text || ''));
+      setFromImage(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذرت قراءة الصورة.');
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  async function chooseVersion(v: Version) {
+    setSelectedVersion(v);
+    setCopied(false);
+    setVariantError('');
+    if (v === 'improved' || !result || variants[v]) return;
+    setVariantLoading(true);
+    try {
+      const data = await post({ action: 'restyle', text: result.improved, style: v });
+      if (data.ok) setVariants((prev) => ({ ...prev, [v]: data.text }));
+      else {
+        setVariantError(data.notice || 'تعذر إنتاج هذا الأسلوب.');
+        setSelectedVersion('improved');
+      }
+    } catch (err) {
+      setVariantError(err instanceof Error ? err.message : 'تعذر إنتاج هذا الأسلوب.');
+      setSelectedVersion('improved');
+    } finally {
+      setVariantLoading(false);
+    }
   }
 
   async function copyText() {
@@ -86,6 +161,18 @@ export default function Home() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
   }
+
+  const headline =
+    result?.status === 'ok'
+      ? 'صياغة أكثر وضوحًا واحترامًا'
+      : result?.status === 'unchanged'
+        ? 'رسالتك واضحة ومحترمة كما هي'
+        : result?.status === 'no_rewrite'
+          ? 'لن نعدّل هذه الرسالة'
+          : 'لم نستطع تحسين الرسالة';
+
+  const modeLabel = result?.mode === 'ai' ? 'ذكاء اصطناعي' : result?.mode === 'mock' ? 'وضع تطوير' : 'فحص أولي';
+  const severityLabel = result?.severity === 'sharp' ? 'حادة' : result?.severity === 'soften' ? 'تحتاج تلطيفًا' : result?.severity === 'clean' ? 'سليمة' : '';
 
   return (
     <main className="page-shell">
@@ -116,7 +203,7 @@ export default function Home() {
               <textarea
                 id="message"
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => { setText(e.target.value); setFromImage(false); }}
                 placeholder="اكتب الرسالة كما هي… حتى لو كانت حادة."
                 maxLength={1400}
               />
@@ -124,44 +211,51 @@ export default function Home() {
               <div className="examples-row">
                 <span>جرّب مثالًا:</span>
                 {examples.map((example, i) => (
-                  <button key={i} onClick={() => setText(example)}>{i + 1}</button>
+                  <button key={i} onClick={() => { setText(example); setFromImage(false); }}>{i + 1}</button>
                 ))}
               </div>
             </div>
           ) : (
             <div className="input-block">
-              <label>ارفع صورة التهنئة أو المنشور أو لقطة الشاشة</label>
+              <label>ارفع لقطة شاشة لرسالة أو منشور</label>
               <label className="dropzone">
-                <input type="file" accept="image/*" onChange={onImage} />
-                {imageDataUrl ? (
+                <input type="file" accept="image/*" onChange={onImage} disabled={extracting} />
+                {imagePreview ? (
                   <div className="preview-wrap">
-                    <img src={imageDataUrl} alt="معاينة الصورة المرفوعة" />
+                    <img src={imagePreview} alt="معاينة الصورة المرفوعة" />
                     <strong>{imageName}</strong>
-                    <span>اضغط لاختيار صورة أخرى</span>
+                    <span>{extracting ? 'جارٍ قراءة النص…' : 'اضغط لاختيار صورة أخرى'}</span>
                   </div>
                 ) : (
                   <div className="upload-empty">
                     <div className="upload-icon">＋</div>
-                    <strong>اختر صورة من جهازك</strong>
-                    <span>PNG أو JPG - حتى 5MB</span>
+                    <strong>{extracting ? 'جارٍ قراءة النص…' : 'اختر صورة من جهازك'}</strong>
+                    <span>PNG أو JPG أو WebP</span>
                   </div>
                 )}
               </label>
+              {fromImage && (
+                <div className="extract-note">
+                  <strong>النص المقروء من الصورة</strong>
+                  <span>راجعه وصحّح أي خطأ في القراءة قبل التحسين. قد تحتوي الصورة على أسماء أشخاص، فاحذف ما لا تريد معالجته.</span>
+                </div>
+              )}
               <textarea
                 className="image-note"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="اختياري: اكتب ما تريد التركيز عليه في الصورة…"
+                placeholder="سيظهر هنا النص المقروء من الصورة ليُراجَع…"
+                maxLength={1400}
               />
             </div>
           )}
 
-          {error && <div className="error-box">{error}</div>}
+          {error && <div className="error-box" role="alert">{error}</div>}
 
-          <button className="primary" onClick={improve} disabled={loading}>
+          <button className="primary" onClick={improve} disabled={loading || extracting}>
             {loading ? <><span className="loader" /> جارٍ التحسين…</> : <>✦ حسّنها قبل الإرسال</>}
           </button>
-          <p className="privacy-note">لا نعرض حكمًا على الشخص؛ نحلل نبرة النص فقط.</p>
+          <p className="privacy-note">نحلل نبرة النص فقط ولا نحكم على الشخص. يُرسل النص لمعالجة آلية ولا نخزّنه في الموقع.</p>
         </div>
 
         <div className={`result card ${result ? 'has-result' : ''}`}>
@@ -176,37 +270,55 @@ export default function Home() {
             <div className="result-content">
               <div className="result-head">
                 <div>
-                  <span className="small-label">النتيجة</span>
-                  <h2>{result.flags.length ? 'صياغة أكثر وضوحًا واحترامًا' : 'رسالتك واضحة ومحترمة كما هي'}</h2>
+                  <span className="small-label">النتيجة{severityLabel ? ` · ${severityLabel}` : ''}</span>
+                  <h2>{headline}</h2>
                 </div>
-                <span className={`mode-badge ${result.mode}`}>{result.mode === 'ai' ? 'ذكاء اصطناعي' : 'وضع تجريبي'}</span>
+                <span className={`mode-badge ${result.mode === 'ai' ? 'ai' : 'demo'}`}>{modeLabel}</span>
               </div>
 
-              <div className="tone-grid">
-                <ToneMeter label="قبل" value={result.toneScoreBefore} />
-                <ToneMeter label="بعد" value={result.toneScoreAfter} />
-              </div>
+              {result.notice && <div className="notice-box" role="status">{result.notice}</div>}
 
-              <div className="flags">
-                {result.flags.map((flag) => <span key={flag}>{flag}</span>)}
-              </div>
+              {result.edits.length > 0 && (
+                <div className="edit-list">
+                  <strong>{result.status === 'ok' ? 'ماذا حسّنا؟' : 'ملاحظات'}</strong>
+                  {result.edits.map((edit, i) => (
+                    <div className="edit-item" key={`${edit.quote}-${i}`}>
+                      <span className="edit-tag">{edit.label}</span>
+                      <p className="edit-change">
+                        <del>{edit.quote}</del>
+                        {edit.replacement && <><b aria-hidden="true"> ← </b><ins>{edit.replacement}</ins></>}
+                      </p>
+                      <small>{edit.reason}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-              <div className="why-box">
-                <strong>{result.flags.length ? 'ماذا حسّنا؟' : 'التقييم'}</strong>
-                <p>{result.explanation}</p>
-              </div>
+              {result.status === 'ok' && (
+                <>
+                  {result.verified && <p className="verified-line">✓ تحققنا أن موقفك بقي كما هو دون إضافات.</p>}
 
-              <div className="versions" aria-label="أنماط الصياغة">
-                <button className={selectedVersion === 'improved' ? 'active' : ''} onClick={() => setSelectedVersion('improved')}>متوازن</button>
-                <button className={selectedVersion === 'formal' ? 'active' : ''} onClick={() => setSelectedVersion('formal')}>رسمي</button>
-                <button className={selectedVersion === 'friendly' ? 'active' : ''} onClick={() => setSelectedVersion('friendly')}>ودي</button>
-                <button className={selectedVersion === 'concise' ? 'active' : ''} onClick={() => setSelectedVersion('concise')}>مختصر</button>
-              </div>
+                  <div className="versions" aria-label="أنماط الصياغة">
+                    <button className={selectedVersion === 'improved' ? 'active' : ''} onClick={() => chooseVersion('improved')}>متوازن</button>
+                    <button className={selectedVersion === 'formal' ? 'active' : ''} onClick={() => chooseVersion('formal')} disabled={variantLoading}>رسمي</button>
+                    <button className={selectedVersion === 'friendly' ? 'active' : ''} onClick={() => chooseVersion('friendly')} disabled={variantLoading}>ودي</button>
+                    <button className={selectedVersion === 'concise' ? 'active' : ''} onClick={() => chooseVersion('concise')} disabled={variantLoading}>مختصر</button>
+                  </div>
+                  {variantError && <div className="error-box" role="alert">{variantError}</div>}
 
-              <div className="improved-box">
-                <p>{selectedText}</p>
-                <button className="copy" onClick={copyText}>{copied ? 'تم النسخ ✓' : 'نسخ النص'}</button>
-              </div>
+                  <div className="improved-box">
+                    <p>{variantLoading ? 'جارٍ إعداد هذا الأسلوب…' : selectedText}</p>
+                    <button className="copy" onClick={copyText} disabled={variantLoading}>{copied ? 'تم النسخ ✓' : 'نسخ النص'}</button>
+                  </div>
+                </>
+              )}
+
+              {result.status === 'unchanged' && (
+                <div className="improved-box">
+                  <p>{result.original}</p>
+                  <button className="copy" onClick={() => { navigator.clipboard.writeText(result.original); setCopied(true); setTimeout(() => setCopied(false), 1600); }}>{copied ? 'تم النسخ ✓' : 'نسخ النص'}</button>
+                </div>
+              )}
 
               <p className="result-footer">الاختلاف طبيعي. المهم أن تصل الفكرة دون أن تتحول الكلمات إلى حاجز.</p>
             </div>
@@ -222,15 +334,5 @@ export default function Home() {
 
       <footer className="wrap footer">مبادرة تقنية لنشر ثقافة التسامح في التواصل الرقمي</footer>
     </main>
-  );
-}
-
-function ToneMeter({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="tone-meter">
-      <div className="tone-top"><span>{label}</span><strong>{value}%</strong></div>
-      <div className="bar"><i style={{ width: `${value}%` }} /></div>
-      <small>وضوح واحترام النبرة</small>
-    </div>
   );
 }

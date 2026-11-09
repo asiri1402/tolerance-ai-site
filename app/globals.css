@@ -150,3 +150,18 @@ textarea::placeholder { color: #a6abb3; }
   textarea { min-height: 205px; }
   .pattern-a { width: 260px; left: -130px; }
 }
+
+/* ── حالات النتيجة الجديدة ── */
+.notice-box { background: #fff8e8; color: #7a5413; border: 1px solid #f0dfb5; border-radius: 14px; padding: 11px 13px; font-size: 13px; line-height: 1.7; }
+.extract-note { display: grid; gap: 4px; margin-top: 12px; background: var(--soft); border: 1px solid var(--line); border-radius: 14px; padding: 11px 13px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+.extract-note strong { color: var(--tuwaiq-purple); font-size: 13px; }
+.edit-list { display: grid; gap: 10px; }
+.edit-list > strong { font-size: 13px; color: #087b6c; }
+.edit-item { border: 1px solid var(--line); border-radius: 14px; padding: 11px 13px; background: #fff; display: grid; gap: 5px; }
+.edit-tag { justify-self: start; background: #fff7ef; color: #8f5a22; border: 1px solid #f2dfc7; border-radius: 999px; padding: 3px 9px; font-size: 11px; }
+.edit-change { margin: 0; line-height: 1.9; font-size: 15px; }
+.edit-change del { color: #a34631; text-decoration-thickness: 1px; }
+.edit-change ins { color: #087b6c; text-decoration: none; font-weight: 600; }
+.edit-item small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.verified-line { margin: 0; color: #087b6c; font-size: 12px; }
+.versions button:disabled, .copy:disabled { opacity: .55; cursor: wait; }

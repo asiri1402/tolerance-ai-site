@@ -1,3 +1,4 @@
+// المنطق القديم (lib/demo.ts قبل إعادة البناء) محفوظ هنا كخط أساس للمقارنة فقط. لا يُستورد من التطبيق.
 export type ImproveResult = {
   original: string;
   improved: string;
