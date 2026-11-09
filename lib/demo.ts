@@ -20,6 +20,7 @@ const replacements: Array<[RegExp, string, string]> = [
   [/أنت دائمًا/gi, 'في بعض المرات', 'تعميم'],
   [/أنت دايمًا/gi, 'في بعض المرات', 'تعميم'],
   [/أنت غلطان(?: 100%| ١٠٠٪)?/gi, 'أنا أرى الموضوع بشكل مختلف', 'حكم قطعي'],
+  [/(?:واضح\s+)?(?:(?:أنك|إنك|انك|أنت|انت)\s+)?غير\s+مؤهل(?:ة)?\s+لهذا\s+المنصب/gi, 'أرى أن مؤهلاتك قد لا تتوافق مع متطلبات هذا المنصب', 'حكم قاطع على أهلية الشخص'],
   [/ما تعرف تتكلم باحترام/gi, 'أتمنى أن نكمل الحوار بأسلوب هادئ ومحترم', 'صياغة مواجهة'],
   [/لا تدخل في النقاش/gi, 'خلنا نكمل النقاش مع احترام اختلافنا', 'إقصاء الطرف الآخر'],
   [/ما تفهم فيه/gi, 'قد تكون لدينا معلومات مختلفة عنه', 'تقليل من المعرفة'],
@@ -72,6 +73,7 @@ export function demoImprove(input: string): ImproveResult {
 
   const before = Math.max(20, 78 - flags.length * 16);
   const after = Math.min(96, Math.max(86, before + 28));
+  const roleSuitability = flags.includes('حكم قاطع على أهلية الشخص');
 
   return {
     original,
@@ -79,8 +81,14 @@ export function demoImprove(input: string): ImproveResult {
     toneScoreBefore: before,
     toneScoreAfter: after,
     flags,
-    explanation: 'حافظنا على الفكرة الأساسية، وقللنا التعميم أو الحكم الشخصي، وحولنا التركيز إلى السلوك أو الفكرة نفسها.',
-    alternatives: {
+    explanation: roleSuitability
+      ? 'استبدلنا الحكم القاطع على الشخص بملاحظة حول توافق المؤهلات مع متطلبات المنصب، مع الحفاظ على رأيك في الملاءمة.'
+      : 'حافظنا على الفكرة الأساسية، وقللنا التعميم أو الحكم الشخصي، وحولنا التركيز إلى السلوك أو الفكرة نفسها.',
+    alternatives: roleSuitability ? {
+      formal: improved.replace(/^أرى أن مؤهلاتك قد لا تتوافق/, 'في تقديري، قد لا تتوافق مؤهلاتك'),
+      friendly: improved.replace(/^أرى أن/, 'أعتقد أن'),
+      concise: improved.replace(/^أرى أن /, '')
+    } : {
       formal: `أقدّر وجهة نظرك، وأرى أن من الأفضل تناول الموضوع بصورة أكثر هدوءًا ووضوحًا. ${improved}`,
       friendly: `ممكن نختلف، وهذا طبيعي 🌿 ${improved}`,
       concise: improved.length > 120 ? `${improved.slice(0, 117)}…` : improved
