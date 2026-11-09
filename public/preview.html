@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>حسّنها قبل الإرسال - معاينة</title>
+  <link rel="stylesheet" href="/preview.css" />
+  <style>
+    .preview-only .result-content{display:none}.preview-only.show-result .empty-result{display:none}.preview-only.show-result .result-content{display:grid}
+  </style>
+</head>
+<body>
+<main class="page-shell">
+  <div class="pattern pattern-a"></div><div class="pattern pattern-b"></div>
+  <header class="brandbar wrap"><img class="brand-logo" src="/assets/tuwaiq-moe.png" alt="أكاديمية طويق ووزارة التعليم"><span class="event-tag">اليوم الدولي للتسامح</span></header>
+  <section class="hero wrap"><div class="eyebrow"><span class="spark">✦</span> تجربة ذكية لتحسين التواصل</div><h1>لا تغيّر رأيك…<br><span>حسّن طريقة التعبير عنه.</span></h1><p class="hero-copy">اكتب رسالتك أو ارفع صورة لمنشور قبل إرساله. نساعدك على اكتشاف ما قد يُفهم بشكل سلبي وصياغته بوضوح واحترام، دون تغيير رأيك.</p></section>
+  <section class="workspace wrap">
+    <div class="composer card">
+      <div class="tabs"><button class="active">نص أو رسالة</button><button>صورة أو بوست</button></div>
+      <div class="input-block"><label for="message">ما الذي تريد إرساله؟</label><textarea id="message" placeholder="اكتب الرسالة كما هي… حتى لو كانت حادة.">واضح أنك ما فهمت الموضوع أصلًا.</textarea><div class="counter">35 / 1400</div><div class="examples-row"><span>جرّب مثالًا:</span><button>1</button><button>2</button><button>3</button></div></div>
+      <button class="primary" id="improve">✦ حسّنها قبل الإرسال</button><p class="privacy-note">لا نعرض حكمًا على الشخص؛ نحلل نبرة النص فقط.</p>
+    </div>
+    <div class="result card preview-only" id="result">
+      <div class="empty-result"><div class="result-orb">✦</div><h2>النتيجة ستظهر هنا</h2><p>سنوضح ما الذي قد يُفهم بشكل سلبي، ثم نقترح صياغة تحافظ على رأيك وتقلل سوء الفهم.</p><div class="mini-flow"><span>رسالتك</span><b>←</b><span>تحليل النبرة</span><b>←</b><span>صياغة أفضل</span></div></div>
+      <div class="result-content">
+        <div class="result-head"><div><span class="small-label">النتيجة</span><h2>صياغة أكثر وضوحًا واحترامًا</h2></div><span class="mode-badge demo">وضع تجريبي</span></div>
+        <div class="tone-grid"><div class="tone-meter"><div class="tone-top"><span>قبل</span><strong>58%</strong></div><div class="bar"><i style="width:58%"></i></div><small>وضوح واحترام النبرة</small></div><div class="tone-meter"><div class="tone-top"><span>بعد</span><strong>92%</strong></div><div class="bar"><i style="width:92%"></i></div><small>وضوح واحترام النبرة</small></div></div>
+        <div class="flags"><span>تقليل من فهم الطرف الآخر</span><span>صياغة مواجهة</span></div>
+        <div class="why-box"><strong>ماذا حسّنا؟</strong><p>حافظنا على الفكرة الأساسية، وقللنا الحكم الشخصي، وحولنا التركيز إلى اختلاف الفهم نفسه.</p></div>
+        <div class="versions"><button class="active">متوازن</button><button>رسمي</button><button>ودي</button><button>مختصر</button></div>
+        <div class="improved-box"><p id="improvedText">أعتقد أن فهمنا للموضوع مختلف، ويسعدني أن نراجع النقطة معًا.</p><button class="copy">نسخ النص</button></div>
+        <p class="result-footer">الاختلاف طبيعي. المهم أن تصل الفكرة دون أن تتحول الكلمات إلى حاجز.</p>
+      </div>
+    </div>
+  </section>
+  <section class="principles wrap"><div><b>01</b><strong>نحافظ على رأيك</strong><span>لا نغيّر موقفك أو نفرض عليك صياغة بعينها.</span></div><div><b>02</b><strong>نفصل الفكرة عن الشخص</strong><span>نقلل التعميم والاتهام والتجريح دون تمييع المعنى.</span></div><div><b>03</b><strong>نقلل سوء الفهم</strong><span>صياغة أوضح تساعد على استمرار الحوار بدل قطعه.</span></div></section>
+  <footer class="wrap footer">مبادرة تقنية لنشر ثقافة التسامح في التواصل الرقمي</footer>
+</main>
+<script>
+const btn=document.getElementById('improve');const res=document.getElementById('result');const out=document.getElementById('improvedText');const box=document.getElementById('message');
+btn.addEventListener('click',()=>{let t=box.value.trim();let r=t.replace(/واضح أنك ما فهمت(?: الموضوع)?(?: أصلًا| اصلا)?/gi,'أعتقد أن فهمنا للموضوع مختلف').replace(/أنت غلطان(?: 100%| ١٠٠٪)?/gi,'أنا أرى الموضوع بشكل مختلف').replace(/أنت دائمًا/gi,'في بعض المرات');out.textContent=r===t?'أود التعبير عن وجهة نظري بوضوح واحترام: '+t:r;res.classList.add('show-result');});
+</script>
+</body></html>
