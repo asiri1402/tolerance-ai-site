@@ -52,10 +52,23 @@ test('الفحص يسمح بإبقاء الرقم الموجود في المقط
   assert.deepEqual(runChecks(original, r).failures, []);
 });
 
-test('إعادة كتابة معظم النص الطويل تُرفض كتحرير غير موضعي', () => {
-  const original = 'هذه رسالة طويلة نسبيًا فيها كلام كثير عن الموضوع ولا يوجد فيها إلا القليل الحاد';
+test('إعادة كتابة معظم رسالة طويلة تُرفض كتحرير غير موضعي', () => {
+  const original =
+    'هذه رسالة طويلة فيها كلام كثير عن الموضوع والمشروع والجدول والاجتماعات القادمة، ولا يوجد فيها إلا القليل الحاد، ونحتاج أن نراجع التفاصيل معًا قبل نهاية الأسبوع حتى لا نتأخر';
   const r = applyEdits(original, [edit(original, 'نص جديد كليًا يحل محل كل شيء')]);
   assert.ok(runChecks(original, r).failures.some((f) => f.kind === 'too_much_changed'));
+});
+
+test('رسالة قصيرة حادة كلها: إعادة صياغتها كاملة مسموحة', () => {
+  const original = 'أنتم دائمًا تخربون العمل ولا أحد منكم يتحمل المسؤولية.';
+  const r = applyEdits(original, [edit('أنتم دائمًا تخربون العمل ولا أحد منكم يتحمل المسؤولية', 'تكررت أخطاء في العمل، ونحتاج أن يتحمل كل منا مسؤوليته')]);
+  assert.deepEqual(runChecks(original, r).failures, []);
+});
+
+test('الرسائل الإنجليزية: بديل بكلمات إنجليزية جديدة مسموح', () => {
+  const original = "you're so stupid, this plan will never work";
+  const r = applyEdits(original, [edit("you're so stupid", 'I strongly disagree')]);
+  assert.deepEqual(runChecks(original, r).failures, []);
 });
 
 test('القاموس يعمل مع الحروف العربية (\\b لا تعمل معها) ومع السوابق والتاء المربوطة', () => {

@@ -4,6 +4,7 @@ import { scanHarsh } from './lexicon';
 import type { Editor, Restyler, Verifier } from './model';
 import {
   CATEGORY_LABELS,
+  isToneEdit,
   type AppliedEdit,
   type EditorOutput,
   type ImproveResponse,
@@ -77,15 +78,12 @@ async function tryEditor(editor: Editor, text: string, feedback?: string): Promi
   } catch (error) {
     // تشخيص بلا محتوى: اسم الخطأ ورمز الحالة، ورسالة قصيرة فقط لأخطاء الاتصال بالمزوّد (لا تحوي نص المستخدم).
     const e = error as { name?: string; statusCode?: number; message?: string };
-    console.log(
-      JSON.stringify({
-        app: 'tolerance',
+    logEvent({
         event: 'editor_error',
         name: e?.name ?? 'unknown',
         statusCode: e?.statusCode ?? null,
         message: e?.statusCode ? String(e.message ?? '').slice(0, 200) : undefined
-      })
-    );
+    });
     return { ok: false, error };
   }
 }
@@ -124,8 +122,11 @@ export async function improveText(rawText: string, deps: Deps): Promise<ImproveR
       };
     }
 
-    // النموذج حكم بأن النص سليم لكن فيه لفظ حاد معروف: نطلب منه إعادة النظر مرة واحدة.
-    if ((out.verdict === 'clean' || out.edits.length === 0) && !retried) {
+    // حكم «سليمة» يعني لا تعديل للنبرة؛ تبقى التصحيحات اللغوية فقط.
+    const edits = out.verdict === 'clean' ? out.edits.filter((e) => !isToneEdit(e)) : out.edits;
+
+    // لا تعديل للنبرة لكن فيه لفظ حاد معروف: نطلب من النموذج إعادة النظر مرة واحدة.
+    if (!edits.some(isToneEdit) && !retried) {
       const hits = scanHarsh(original);
       if (hits.length) {
         retried = true;
@@ -134,16 +135,17 @@ export async function improveText(rawText: string, deps: Deps): Promise<ImproveR
       }
     }
 
-    if (out.verdict === 'clean' || out.edits.length === 0) {
+    if (edits.length === 0) {
       return { ...base(original, mode), status: 'unchanged', severity: 'clean' };
     }
 
-    const applied = applyEdits(original, out.edits);
+    const applied = applyEdits(original, edits);
     const report = runChecks(original, applied);
     const failures: CheckFailure[] = [...report.failures];
     if (applied.applied.length === 0) failures.push({ kind: 'no_valid_edit' });
 
     if (failures.length) {
+      logEvent({ event: 'check_failed', kinds: [...new Set(failures.map((f) => f.kind))], retried });
       if (!retried) {
         retried = true;
         feedback = describeFailures(failures);
@@ -159,6 +161,7 @@ export async function improveText(rawText: string, deps: Deps): Promise<ImproveR
         const v = await deps.verifier({ original, improved: applied.improved });
         verified = v.same_position && !v.added_claims;
         if (!verified) {
+          logEvent({ event: 'verifier_rejected', same_position: v.same_position, added_claims: v.added_claims, retried });
           if (!retried) {
             retried = true;
             feedback = `المدقّق يرى مشكلة: ${v.note || 'تغيّر الموقف أو أُضيف ما ليس في الأصل'}. عدّل أضيق وأبقِ موقف المستخدم.`;
@@ -184,6 +187,12 @@ export async function improveText(rawText: string, deps: Deps): Promise<ImproveR
       mode
     };
   }
+}
+
+/** سجل تشخيص بلا محتوى (أنواع الفشل فقط). يُسكت في الاختبارات. */
+function logEvent(e: Record<string, unknown>) {
+  if (process.env.NODE_TEST_CONTEXT || process.env.QUIET_LOGS === '1') return;
+  console.log(JSON.stringify({ app: 'tolerance', ...e }));
 }
 
 function toApplied(e: EditorOutput['edits'][number]): AppliedEdit {

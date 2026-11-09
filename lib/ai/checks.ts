@@ -5,7 +5,6 @@ import { normalize } from './normalize';
 const EMOJI = /\p{Extended_Pictographic}/gu;
 const URL_RE = /https?:\/\/\S+|www\.\S+/gi;
 const MENTION_RE = /[@#][\p{L}\p{N}_]+/gu;
-const LATIN_RE = /[A-Za-z][A-Za-z0-9_.-]*/g;
 const NUMBER_RE = /[0-9٠-٩۰-۹]+(?:[.,٫][0-9٠-٩۰-۹]+)?/g;
 
 const ARABIC_INDIC = '٠١٢٣٤٥٦٧٨٩';
@@ -13,10 +12,10 @@ function digitsToLatin(s: string) {
   return s.replace(/[٠-٩]/g, (d) => String(ARABIC_INDIC.indexOf(d)));
 }
 
-/** رموز «وقائعية» يجب ألا يضيفها التعديل: أرقام، روابط، إشارات، كلمات لاتينية. */
+/** رموز «وقائعية» يجب ألا يضيفها التعديل: أرقام، روابط، إشارات ووسوم. (الكلمات اللاتينية مسموحة: الرسائل الإنجليزية تُعدَّل بلغتها.) */
 export function factualTokens(text: string): Set<string> {
   const out = new Set<string>();
-  for (const re of [URL_RE, MENTION_RE, LATIN_RE, NUMBER_RE]) {
+  for (const re of [URL_RE, MENTION_RE, NUMBER_RE]) {
     for (const m of text.matchAll(re)) out.add(digitsToLatin(m[0]).toLowerCase());
   }
   return out;
@@ -60,8 +59,9 @@ export function runChecks(original: string, result: ApplyResult): CheckReport {
   }
 
   const ratio = original.length ? result.replacedChars / original.length : 0;
-  // تعديل أكثر من 70% من نص طويل يعني إعادة كتابة لا تحريرًا موضعيًا.
-  if (original.length > 40 && ratio > 0.7) failures.push({ kind: 'too_much_changed', ratio });
+  // الرسالة القصيرة الحادة كلها قد تحتاج إعادة صياغة كاملة (والمدقق يحرس الموقف).
+  // أما تعديل معظم رسالة طويلة فيعني إعادة كتابة لا تحريرًا موضعيًا.
+  if (original.length > 160 && ratio > 0.85) failures.push({ kind: 'too_much_changed', ratio });
 
   if (result.improved.length > original.length * 1.5 + 40) {
     failures.push({ kind: 'grew_too_much', from: original.length, to: result.improved.length });

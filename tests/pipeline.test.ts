@@ -143,3 +143,35 @@ test('الأسلوب البديل: يُرفض إن أضاف رقمًا أو رم
   const good = await restyleText(text, 'formal', async () => 'أرى أن القرار يرفع التكلفة، ونحتاج إلى بديل');
   assert.equal(good.ok, true);
 });
+
+test('سليمة النبرة مع أخطاء لغوية: تُصحَّح اللغة فقط والحالة ok', async () => {
+  const { editor } = scripted({
+    verdict: 'clean',
+    no_rewrite_kind: 'none',
+    stance: '',
+    edits: [
+      { quote: 'لاكن', replacement: 'لكن', category: 'language', reason: 'تُكتب دون ألف' },
+      { quote: 'المدرسه', replacement: 'المدرسة', category: 'language', reason: 'تاء مربوطة' }
+    ]
+  });
+  const res = await improveText('ما أتفق لاكن نكمل في المدرسه', { editor });
+  assert.equal(res.status, 'ok');
+  assert.equal(res.severity, 'clean');
+  assert.equal(res.improved, 'ما أتفق لكن نكمل في المدرسة');
+  assert.ok(res.edits.every((e) => e.label === 'تصحيح لغوي'));
+});
+
+test('حكم «سليمة» يتجاهل أي تعديل نبرة متناقض ويبقي التصحيح اللغوي', async () => {
+  const { editor } = scripted({
+    verdict: 'clean',
+    no_rewrite_kind: 'none',
+    stance: '',
+    edits: [
+      { quote: 'ضد القرار', replacement: 'متردد في القرار', category: 'absolute_claim', reason: 'x' },
+      { quote: 'انا', replacement: 'أنا', category: 'language', reason: 'همزة قطع' }
+    ]
+  });
+  const res = await improveText('انا ضد القرار', { editor });
+  assert.equal(res.improved, 'أنا ضد القرار');
+  assert.equal(res.edits.length, 1);
+});

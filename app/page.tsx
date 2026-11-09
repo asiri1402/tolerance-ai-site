@@ -162,8 +162,12 @@ export default function Home() {
     setTimeout(() => setCopied(false), 1600);
   }
 
+  const languageOnly = !!result && result.edits.length > 0 && result.edits.every((e) => e.category === 'language');
+
   const headline =
-    result?.status === 'ok'
+    result?.status === 'ok' && languageOnly
+      ? 'رسالتك محترمة، وصحّحنا بعض الأخطاء اللغوية'
+      : result?.status === 'ok'
       ? 'صياغة أكثر وضوحًا واحترامًا'
       : result?.status === 'unchanged'
         ? 'رسالتك واضحة ومحترمة كما هي'
@@ -283,7 +287,7 @@ export default function Home() {
                   <strong>{result.status === 'ok' ? 'ماذا حسّنا؟' : 'ملاحظات'}</strong>
                   {result.edits.map((edit, i) => (
                     <div className="edit-item" key={`${edit.quote}-${i}`}>
-                      <span className="edit-tag">{edit.label}</span>
+                      <span className={`edit-tag ${edit.category === 'language' ? 'lang' : ''}`}>{edit.label}</span>
                       <p className="edit-change">
                         <del>{edit.quote}</del>
                         {edit.replacement && <><b aria-hidden="true"> ← </b><ins>{edit.replacement}</ins></>}

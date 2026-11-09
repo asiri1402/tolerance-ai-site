@@ -165,3 +165,4 @@ textarea::placeholder { color: #a6abb3; }
 .edit-item small { color: var(--muted); font-size: 12px; line-height: 1.6; }
 .verified-line { margin: 0; color: #087b6c; font-size: 12px; }
 .versions button:disabled, .copy:disabled { opacity: .55; cursor: wait; }
+.edit-tag.lang { background: #eef4ff; color: #2f5fb3; border-color: #d3e2fb; }

@@ -6,7 +6,8 @@ export const CATEGORIES = [
   'sarcasm',
   'absolute_claim',
   'dismissive',
-  'insult'
+  'insult',
+  'language'
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
@@ -16,8 +17,12 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   sarcasm: 'سخرية',
   absolute_claim: 'حكم قاطع',
   dismissive: 'إقصاء أو تقليل',
-  insult: 'وصف جارح'
+  insult: 'وصف جارح',
+  language: 'تصحيح لغوي'
 };
+
+/** التعديلات التي تخص النبرة (كل ما عدا التصحيح اللغوي). */
+export const isToneEdit = (e: { category: Category }) => e.category !== 'language';
 
 /** ما يطلبه النموذج: تعديلات فقط، والخادم هو من يطبّقها على النص الأصلي. */
 export const editSchema = z.object({
@@ -32,7 +37,7 @@ export const editorSchema = z.object({
   verdict: z.enum(['clean', 'soften', 'sharp', 'no_rewrite']),
   no_rewrite_kind: z.enum(['none', 'threat', 'self_harm', 'hate']),
   stance: z.string(),
-  edits: z.array(editSchema).max(8)
+  edits: z.array(editSchema).max(12)
 });
 export type EditorOutput = z.infer<typeof editorSchema>;
 
