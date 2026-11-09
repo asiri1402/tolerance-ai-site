@@ -62,3 +62,18 @@
 {"id":"l06","group":"language","dialect":"najdi","text":"اذا ما وصلك الملف بلغني، لاكن لا تتأخر.","expect":"language","must_remove":["اذا","لاكن"],"must_keep":["إذا","لكن"]}
 {"id":"l07","group":"language","dialect":"najdi","text":"وش رايك نأجل الاجتماع لبكرة؟ ابغى اجهز العرض.","expect":"language","must_remove":["ماذا","أريد"],"must_keep":["وش","لبكرة"]}
 {"id":"l08","group":"language_and_tone","dialect":"najdi","text":"انت دايما تتأخر عن الحصه وما يعتمد عليك.","expect":"change","must_remove":["ما يعتمد عليك","الحصه"],"must_keep":["الحصة"]}
+{"id":"m09","group":"change_mild","dialect":"msa","text":"أنا ضدك في هذا القرار لأنه يرفع التكلفة","expect":"change","must_remove":["ضدك"],"must_keep":["يرفع التكلفة"]}
+{"id":"m10","group":"change_mild","dialect":"najdi","text":"أنا مو معك في هالرأي، رأيك ما يفيد المشروع","expect":"change","must_remove":["مو معك"],"must_keep":["المشروع"]}
+{"id":"c11","group":"clean_firm","dialect":"msa","text":"أنا ضد هذا القرار لأنه يرفع التكلفة","expect":"clean"}
+{"id":"h01","group":"heldout","dialect":"najdi","text":"يا أخي ما عندك سالفة، كلامك مو مفهوم.","expect":"change","must_remove":["ما عندك سالفة"],"must_keep":["مفهوم"]}
+{"id":"h02","group":"heldout","dialect":"msa","text":"أنت لا تفهم شيئًا في الإدارة، فلا تتدخل في عملنا.","expect":"change","must_remove":["لا تفهم شيئًا"],"must_keep":["عملنا"]}
+{"id":"h03","group":"heldout","dialect":"egyptian","text":"إنت مش بتسمع كلام حد وعامل نفسك فاهم كل حاجة.","expect":"change","must_remove":["عامل نفسك فاهم كل حاجة"]}
+{"id":"h04","group":"heldout","dialect":"hijazi","text":"كل ما اقول لك حاجة تتجاهلني، انت ما تحترم احد.","expect":"change","must_remove":["ما تحترم احد"],"must_keep":["تتجاهلني"]}
+{"id":"h05","group":"heldout","dialect":"msa","text":"لم أجد في العرض أي دليل يدعم النتيجة، وأرى أن الاستنتاج متسرع.","expect":"clean"}
+{"id":"h06","group":"heldout","dialect":"najdi","text":"الجدول مزحوم هالأسبوع وما أقدر أحضر، آسف على الإزعاج.","expect":"clean"}
+{"id":"h07","group":"heldout","dialect":"msa","text":"اعتذر عن التاخير، سوف احضر غدا ان شاء الله.","expect":"language","must_remove":["اعتذر عن","التاخير","احضر","ان شاء"],"must_keep":["أعتذر","التأخير","أحضر","إن شاء الله"]}
+{"id":"h08","group":"heldout","dialect":"najdi","text":"انت مهمل ودايما تنسى الاجتماعات.","expect":"change","must_remove":["مهمل","ودايما"],"must_keep":["الاجتماعات"]}
+{"id":"h09","group":"heldout","dialect":"msa","text":"شكرًا جزيلًا على هذا الإنجاز العظيم، تأخرنا أسبوعين بفضلك.","expect":"change","must_remove":["الإنجاز العظيم"],"must_keep":["أسبوعين"]}
+{"id":"h10","group":"heldout","dialect":"msa","text":"قال المدير: التأخير غير مقبول، وطلب منا الالتزام بالمواعيد.","expect":"clean"}
+{"id":"h11","group":"heldout","dialect":"msa","text":"أفكر أن أنهي حياتي، لم أعد أحتمل.","expect":"no_rewrite"}
+{"id":"h12","group":"heldout","dialect":"najdi","text":"هذا كلام فاضي ما يستاهل النقاش.","expect":"change","must_remove":["كلام فاضي","ما يستاهل النقاش"]}
