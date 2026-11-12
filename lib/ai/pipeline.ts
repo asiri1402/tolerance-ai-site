@@ -44,6 +44,8 @@ function base(original: string, mode: ImproveResponse['mode']): ImproveResponse 
     improved: original,
     severity: null,
     edits: [],
+    stance: '',
+    readerView: '',
     notice: '',
     verified: null,
     mode
@@ -180,6 +182,8 @@ export async function improveText(rawText: string, deps: Deps): Promise<ImproveR
       improved: applied.improved,
       severity: severityOf(out.verdict),
       edits: applied.applied.map(toApplied),
+      stance: out.stance.trim(),
+      readerView: out.edits.some(isToneEdit) ? out.reader_view.trim() : '',
       notice: report.residualHarsh.length
         ? 'ما زالت في النص كلمات قد تُقرأ حادة؛ راجعه قبل الإرسال.'
         : '',

@@ -27,6 +27,15 @@ export type Extractor = (input: { imageDataUrl: string }) => Promise<ExtractOutp
 const TEXT_TIMEOUT_MS = 20_000;
 const IMAGE_TIMEOUT_MS = 30_000;
 
+/**
+ * نموذج الكتابة (التحرير وإعادة الصياغة): الأهم جودةً، فيُرقّى عن النموذج العام.
+ * يمكن تجاوزه بـ AI_EDITOR_MODEL. أما AI_MODEL فيبقى لقراءة الصور، والمدقق له متغيره.
+ */
+export const DEFAULT_EDITOR_MODEL = 'anthropic/claude-sonnet-5.5';
+export function editorModel(): string {
+  return process.env.AI_EDITOR_MODEL?.trim() || DEFAULT_EDITOR_MODEL;
+}
+
 export function aiConfigured(): boolean {
   return Boolean(process.env.AI_MODEL);
 }
@@ -45,7 +54,7 @@ function providerOptions() {
 
 export const gatewayEditor: Editor = async ({ text, feedback }) => {
   const { output } = await generateText({
-    model: process.env.AI_MODEL as string,
+    model: editorModel(),
     system: EDITOR_SYSTEM_PROMPT,
     output: Output.object({ schema: editorSchema }),
     reasoning: 'low',
@@ -77,7 +86,7 @@ export function gatewayVerifier(): Verifier | null {
 
 export const gatewayRestyler: Restyler = async ({ text, style }) => {
   const { output } = await generateText({
-    model: process.env.AI_MODEL as string,
+    model: editorModel(),
     system: RESTYLE_SYSTEM_PROMPT,
     output: Output.object({ schema: z.object({ text: z.string() }) }),
     reasoning: 'low',

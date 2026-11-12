@@ -163,6 +163,10 @@ textarea::placeholder { color: #a6abb3; }
 .edit-change del { color: #a34631; text-decoration-thickness: 1px; }
 .edit-change ins { color: #087b6c; text-decoration: none; font-weight: 600; }
 .edit-item small { color: var(--muted); font-size: 12px; line-height: 1.6; }
-.verified-line { margin: 0; color: #087b6c; font-size: 12px; }
+.verified-line { margin: 0; color: #087b6c; font-size: 12px; line-height: 1.7; }
+.verified-line .stance { color: var(--muted); }
+.reader-view { background: #f4f1ff; border: 1px solid #e0d9fb; border-radius: 14px; padding: 11px 13px; }
+.reader-view strong { display: block; font-size: 12px; color: var(--tuwaiq-purple); margin-bottom: 4px; }
+.reader-view p { margin: 0; font-size: 13.5px; line-height: 1.8; color: var(--ink); }
 .versions button:disabled, .copy:disabled { opacity: .55; cursor: wait; }
 .edit-tag.lang { background: #eef4ff; color: #2f5fb3; border-color: #d3e2fb; }

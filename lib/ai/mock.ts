@@ -8,12 +8,13 @@ import type { Editor, Restyler } from './model';
 export const mockEditor: Editor = async ({ text }) => {
   const hits = scanHarsh(text);
   if (!hits.length) {
-    return { verdict: 'clean', no_rewrite_kind: 'none', stance: '', edits: [] };
+    return { verdict: 'clean', no_rewrite_kind: 'none', stance: '', reader_view: '', edits: [] };
   }
   return {
     verdict: 'sharp',
     no_rewrite_kind: 'none',
     stance: '',
+    reader_view: '',
     edits: hits.map((quote) => ({
       quote,
       replacement: '',

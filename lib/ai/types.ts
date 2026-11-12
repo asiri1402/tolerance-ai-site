@@ -6,6 +6,7 @@ export const CATEGORIES = [
   'sarcasm',
   'absolute_claim',
   'dismissive',
+  'stereotype',
   'insult',
   'language'
 ] as const;
@@ -17,6 +18,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   sarcasm: 'سخرية',
   absolute_claim: 'حكم قاطع',
   dismissive: 'إقصاء أو تقليل',
+  stereotype: 'تنميط فئة',
   insult: 'وصف جارح',
   language: 'تصحيح لغوي'
 };
@@ -37,6 +39,7 @@ export const editorSchema = z.object({
   verdict: z.enum(['clean', 'soften', 'sharp', 'no_rewrite']),
   no_rewrite_kind: z.enum(['none', 'threat', 'self_harm', 'hate']),
   stance: z.string(),
+  reader_view: z.string(),
   edits: z.array(editSchema).max(12)
 });
 export type EditorOutput = z.infer<typeof editorSchema>;
@@ -73,6 +76,10 @@ export type ImproveResponse = {
   improved: string;
   severity: Severity | null;
   edits: AppliedEdit[];
+  /** موقف المستخدم كما فهمه المحرّر (يُعرض للتأكد أنه لم يتغير). */
+  stance: string;
+  /** كيف قد يقرأ المتلقي الرسالة الأصلية (جملة واحدة)؛ فارغ إن لم تحتج تعديلًا. */
+  readerView: string;
   /** رسالة موجّهة للمستخدم عند الحالات غير المعتادة. */
   notice: string;
   /** هل اجتاز الفحص الدلالي (null = لم يُجرَ). */

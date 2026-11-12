@@ -10,6 +10,8 @@ type ImproveResult = {
   improved: string;
   severity: 'clean' | 'soften' | 'sharp' | null;
   edits: AppliedEdit[];
+  stance: string;
+  readerView: string;
   notice: string;
   verified: boolean | null;
   mode: 'ai' | 'mock' | 'none';
@@ -21,7 +23,9 @@ type Version = 'improved' | Style;
 const examples = [
   'واضح أنك ما فهمت الموضوع أصلًا.',
   'أنت دائمًا تتأخر وما يعتمد عليك.',
-  'أنا ضد هذا القرار لأنه يرفع التكلفة، ونحتاج بديلًا.'
+  'أنا ضد هذا القرار لأنه يرفع التكلفة، ونحتاج بديلًا.',
+  'زملاؤنا اللي من القرى كلهم ما يفهمون في التقنية، فلا تعتمد عليهم.',
+  'ما شاء الله، رأيك دايم الأصح، الله يهديك.'
 ];
 
 const MAX_DIM = 1568;
@@ -298,9 +302,20 @@ export default function Home() {
                 </div>
               )}
 
+              {result.status === 'ok' && result.readerView && (
+                <div className="reader-view">
+                  <strong>كيف قد تصل رسالتك</strong>
+                  <p>{result.readerView}</p>
+                </div>
+              )}
+
               {result.status === 'ok' && (
                 <>
-                  {result.verified && <p className="verified-line">✓ تحققنا أن موقفك بقي كما هو دون إضافات.</p>}
+                  {result.verified && (
+                    <p className="verified-line">
+                      ✓ تحققنا أن موقفك بقي كما هو دون إضافات{result.stance ? <>: <span className="stance">{result.stance}</span></> : '.'}
+                    </p>
+                  )}
 
                   <div className="versions" aria-label="أنماط الصياغة">
                     <button className={selectedVersion === 'improved' ? 'active' : ''} onClick={() => chooseVersion('improved')}>متوازن</button>
@@ -324,7 +339,7 @@ export default function Home() {
                 </div>
               )}
 
-              <p className="result-footer">الاختلاف طبيعي. المهم أن تصل الفكرة دون أن تتحول الكلمات إلى حاجز.</p>
+              <p className="result-footer">التسامح ليس تنازلًا ولا مجاملة؛ هو أن نختلف ويبقى الحوار ممكنًا.</p>
             </div>
           )}
         </div>

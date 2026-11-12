@@ -4,11 +4,12 @@ import { degradedScan, improveText, restyleText } from '../lib/ai/pipeline';
 import type { Editor, Verifier } from '../lib/ai/model';
 import type { EditorOutput } from '../lib/ai/types';
 
-const clean: EditorOutput = { verdict: 'clean', no_rewrite_kind: 'none', stance: '', edits: [] };
+const clean: EditorOutput = { verdict: 'clean', no_rewrite_kind: 'none', stance: '', reader_view: '', edits: [] };
 const sharp = (quote: string, replacement: string): EditorOutput => ({
   verdict: 'sharp',
   no_rewrite_kind: 'none',
   stance: 'موقف',
+  reader_view: 'قد يشعر المتلقي بالاتهام',
   edits: [{ quote, replacement, category: 'generalization', reason: 'تعميم' }]
 });
 
@@ -63,7 +64,7 @@ test('فشل متكرر: لا بديل، والأصل لم يتغير، والح
 });
 
 test('تهديد أو إيذاء نفس: لا إعادة صياغة', async () => {
-  const { editor } = scripted({ verdict: 'no_rewrite', no_rewrite_kind: 'threat', stance: '', edits: [] });
+  const { editor } = scripted({ verdict: 'no_rewrite', no_rewrite_kind: 'threat', stance: '', reader_view: '', edits: [] });
   const res = await improveText('سأؤذيك', { editor });
   assert.equal(res.status, 'no_rewrite');
   assert.equal(res.improved, 'سأؤذيك');
@@ -149,6 +150,7 @@ test('سليمة النبرة مع أخطاء لغوية: تُصحَّح الل�
     verdict: 'clean',
     no_rewrite_kind: 'none',
     stance: '',
+    reader_view: '',
     edits: [
       { quote: 'لاكن', replacement: 'لكن', category: 'language', reason: 'تُكتب دون ألف' },
       { quote: 'المدرسه', replacement: 'المدرسة', category: 'language', reason: 'تاء مربوطة' }
@@ -166,6 +168,7 @@ test('حكم «سليمة» يتجاهل أي تعديل نبرة متناقض �
     verdict: 'clean',
     no_rewrite_kind: 'none',
     stance: '',
+    reader_view: '',
     edits: [
       { quote: 'ضد القرار', replacement: 'متردد في القرار', category: 'absolute_claim', reason: 'x' },
       { quote: 'انا', replacement: 'أنا', category: 'language', reason: 'همزة قطع' }
@@ -174,4 +177,37 @@ test('حكم «سليمة» يتجاهل أي تعديل نبرة متناقض �
   const res = await improveText('انا ضد القرار', { editor });
   assert.equal(res.improved, 'أنا ضد القرار');
   assert.equal(res.edits.length, 1);
+});
+
+test('الموقف وكيف يقرؤها المتلقي يصلان في النتيجة عند تعديل النبرة', async () => {
+  const { editor } = scripted(sharp('دايمًا', 'كثيرًا'));
+  const res = await improveText('أنت دايمًا تتأخر', { editor });
+  assert.equal(res.status, 'ok');
+  assert.equal(res.stance, 'موقف');
+  assert.equal(res.readerView, 'قد يشعر المتلقي بالاتهام');
+});
+
+test('كيف يقرؤها المتلقي تُحذف إن كانت التعديلات لغوية فقط', async () => {
+  const { editor } = scripted({
+    verdict: 'clean',
+    no_rewrite_kind: 'none',
+    stance: 'موقف',
+    reader_view: 'نص لا يلزم',
+    edits: [{ quote: 'لاكن', replacement: 'لكن', category: 'language', reason: 'تُكتب دون ألف' }]
+  });
+  const res = await improveText('انا موافق لاكن بشرط', { editor });
+  assert.equal(res.readerView, '');
+});
+
+test('تنميط الفئة تعديل نبرة مثل غيره', async () => {
+  const { editor } = scripted({
+    verdict: 'sharp',
+    no_rewrite_kind: 'none',
+    stance: 'موقف',
+    reader_view: 'قد يشعر أفراد الفئة بأنهم متهمون',
+    edits: [{ quote: 'كلهم ما يفهمون', replacement: 'بعضهم ما فهم', category: 'stereotype', reason: 'تنميط' }]
+  });
+  const res = await improveText('زملاؤنا كلهم ما يفهمون في التقنية', { editor });
+  assert.equal(res.status, 'ok');
+  assert.equal(res.edits[0].label, 'تنميط فئة');
 });

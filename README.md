@@ -25,7 +25,8 @@ npm run dev                  # http://localhost:3000
 ## الإعدادات (`.env.example`)
 | المتغير | الوظيفة |
 |---|---|
-| `AI_MODEL` | نموذج التحرير والصور عبر AI Gateway، مثل `anthropic/claude-sonnet-5.5` أو `anthropic/claude-haiku-5.5`. |
+| `AI_MODEL` | يفعّل الذكاء الاصطناعي، ويُستعمل لقراءة الصور. مثل `anthropic/claude-haiku-5.5`. |
+| `AI_EDITOR_MODEL` | نموذج التحرير وإعادة الصياغة. الافتراضي `anthropic/claude-sonnet-5.5` (أعلى جودة بنحو 20 ضعف تكلفة Haiku). |
 | `AI_VERIFIER_MODEL` | نموذج المدقق الدلالي (اختياري، يُفضَّل نموذج صغير). |
 | `AI_FALLBACK_MODELS` | نماذج بديلة مفصولة بفواصل تُجرَّب عند فشل الأساسي. |
 | `AI_ZDR=1` | طلب عدم الاحتفاظ بالبيانات لدى المزوّد (قد يتطلب خطة تدعمه). |
